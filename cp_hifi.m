@@ -1,18 +1,18 @@
 % inputs, X is a tensor
-R = 3;  % rank
-gamma = 50;
-lam = .001;
+R = 4;  % rank
+gamma = 10;
+lam = 1e-6;
 
 fitchangetol = 1e-4;
 maxiters = 50;
-dimorder = 1:N;
 printitn = true;
 
 N = ndims(X);
+dimorder = 1:N;
 normX = norm(X);
 
 % create Kernel Matrix
-K = createRBfKernelMatrix(X(:,:,3),gamma);
+K = createRBfKernelMatrix(double(X(1,:,:))',gamma);
 
 Uinit = cell(N,1);
 for n = 1:N
@@ -55,33 +55,33 @@ for iter = 1:maxiters
                 Unew = full(Unew);   % for the case R=1
             end
 
-            U{n} = Unew;
-            UtU(:,:,n) = U{n}'*U{n};
         else
             % Calculate Unew = X_(n) * khatrirao(all U except n, 'r').
             Unew = mttkrp(X,U,n);
-            y = vec(Unew);
+            y = Unew(:);
 
             % Compute the matrix of coefficients for linear system
             Y = prod(UtU(:,:,[1:n-1 n+1:N]),3);
 
-            M = kron(Y,K) + lam * eye(R*size(X(:,:,3),1));
+            M = kron(Y,K) + lam * eye(R*size(X,3));
 
-            w = M / y;
+            w = M / y';
 
-            Unew = reshape(w,size(X(:,:,3),1), R);
+            Unew = reshape(w,size(X,3), R);
 
             U_mttkrp = Unew;
 
-            U{n} = Unew;
         end
 
-    end
+        if iter == 1
+            lambda = sqrt(sum(Unew.^2,1))'; %2-norm
+        else
+            lambda = max( max(abs(Unew),[],1), 1 )'; %max-norm
+        end
 
-    if iter == 1
-        lambda = sqrt(sum(Unew.^2,1))'; %2-norm
-    else
-        lambda = max( max(abs(Unew),[],1), 1 )'; %max-norm
+        Unew = bsxfun(@rdivide, Unew, lambda');
+        U{n} = Unew;
+        UtU(:,:,n) = U{n}'*U{n};
     end
 
     P = ktensor(lambda,U);
@@ -92,7 +92,7 @@ for iter = 1:maxiters
     % This is equivalent to norm(P)^2
     tmpvecs(:,1:N) = reshape(UtU,[],N);
     tmpvecs(:,N+1) = reshape(lambda*lambda',[],1);
-    normPsqr = sum( prod(tmpvecs,2) ) ;
+    normPsqr = sum( prod(tmpvecs,2) );
 
     if normX == 0
         fit = normPsqr - 2 * iprod;
