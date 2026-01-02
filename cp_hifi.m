@@ -1,9 +1,9 @@
 % inputs, X is a tensor
 R = 4;  % rank
-gamma = 10;
+gamma = 50;
 lam = 1e-6;
 
-fitchangetol = 1e-4;
+fitchangetol = 1e-6;
 maxiters = 50;
 printitn = true;
 
@@ -38,6 +38,8 @@ for n = 1:N
         UtU(:,:,n) = U{n}'*U{n};
     end
 end
+
+fititer = zeros(1,maxiters);
 
 for iter = 1:maxiters
 
@@ -100,6 +102,8 @@ for iter = 1:maxiters
         normresidual = sqrt( normX^2 + normPsqr - 2 * iprod );
         fit = 1 - (normresidual / normX); %fraction explained by model
     end
+    fititer(iter) = fit;
+
     fitchange = abs(fitold - fit);
 
     % Check for convergence
@@ -119,3 +123,5 @@ for iter = 1:maxiters
     end
 
 end
+
+fititer = fititer(1:iter);
