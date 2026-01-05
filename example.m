@@ -1,4 +1,4 @@
-addpath("~/Documents/Research/tensor_toolbox/")
+addpath("../tensor_toolbox/")
 %% Generate Data
 f = @(x) x(1)*cos(2*pi*linspace(0,1,99))+x(2)*sin(2*pi*linspace(0,1,99))+x(3)*cos(2*pi*2*linspace(0,1,99))+x(4)*sin(2*pi*2*linspace(0,1,99));
 
@@ -17,3 +17,7 @@ end
 tt = linspace(0, 1, nt);
 
 X = tensor(A);
+
+[P, fititer] = cp_hifi(X, tt, 2);
+
+plot(P.u{3})

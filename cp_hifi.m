@@ -1,18 +1,28 @@
-% inputs, X is a tensor
-R = 4;  % rank
-gamma = 50;
-lam = 1e-6;
+function [P, fititer] = cp_hifi(X, tt, R, gamma, options)
 
-fitchangetol = 1e-6;
-maxiters = 50;
-printitn = true;
+arguments
+    X
+    tt
+    R = 2
+    gamma = 50
+    options.lam = 1e-6
+    options.fitchangetol = 1e-4
+    options.maxiters = 50
+    options.printitn = true;
+end
+
+lam = options.lam;
+
+fitchangetol = 1e-5;
+maxiters = options.maxiters;
+printitn = options.printitn;
 
 N = ndims(X);
 dimorder = 1:N;
 normX = norm(X);
 
 % create Kernel Matrix
-K = createRBfKernelMatrix(double(X(1,:,:))',gamma);
+K = createRBfKernelMatrix(tt',gamma);
 
 Uinit = cell(N,1);
 for n = 1:N
