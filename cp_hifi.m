@@ -7,13 +7,13 @@ arguments
     gamma = 50
     options.lam = 1e-6
     options.fitchangetol = 1e-4
-    options.maxiters = 50
+    options.maxiters = 100
     options.printitn = true;
 end
 
 lam = options.lam;
 
-fitchangetol = 1e-5;
+fitchangetol = 1e-4;
 maxiters = options.maxiters;
 printitn = options.printitn;
 
@@ -63,9 +63,18 @@ for iter = 1:maxiters
             % Compute the matrix of coefficients for linear system
             Y = prod(UtU(:,:,[1:n-1 n+1:N]),3);
             Unew = Unew / Y;
+
             if issparse(Unew)
                 Unew = full(Unew);   % for the case R=1
             end
+            
+            if iter == 1
+                lambda = sqrt(sum(Unew.^2,1))'; %2-norm
+            else
+                lambda = max( max(abs(Unew),[],1), 1 )'; %max-norm
+            end
+    
+            Unew = bsxfun(@rdivide, Unew, lambda');
 
         else
             % Calculate Unew = X_(n) * khatrirao(all U except n, 'r').
@@ -78,20 +87,22 @@ for iter = 1:maxiters
             M = kron(Y,K) + lam * eye(R*size(X,3));
 
             w = M / y';
-
+            
             Unew = reshape(w,size(X,3), R);
-
+            
+%             if iter == 1
+%                 lambda = sqrt(sum(Unew.^2,1))'; %2-norm
+%             else
+%                 lambda = max( max(abs(Unew),[],1), 1 )'; %max-norm
+%             end
+%     
+%             Unew = bsxfun(@rdivide, Unew, lambda');
+            
             U_mttkrp = Unew;
 
         end
 
-        if iter == 1
-            lambda = sqrt(sum(Unew.^2,1))'; %2-norm
-        else
-            lambda = max( max(abs(Unew),[],1), 1 )'; %max-norm
-        end
-
-        Unew = bsxfun(@rdivide, Unew, lambda');
+       
         U{n} = Unew;
         UtU(:,:,n) = U{n}'*U{n};
     end
@@ -99,7 +110,7 @@ for iter = 1:maxiters
     P = ktensor(lambda,U);
 
     % This is equivalent to innerprod(X,P).
-    iprod = e * (P.U{dimorder(end)} .* U_mttkrp) * lambda;
+    iprod = e * (P.U{dimorder(end)} .* U_mttkrp) * ones(length(lambda),1);
 
     % This is equivalent to norm(P)^2
     tmpvecs(:,1:N) = reshape(UtU,[],N);
@@ -133,5 +144,9 @@ for iter = 1:maxiters
     end
 
 end
+
+P = arrange(P);
+% Fix the signs
+P = fixsigns(P);
 
 fititer = fititer(1:iter);
